@@ -1,0 +1,26 @@
+services:
+  cosy_desk_fenetre:
+    container_name: desk_fenetre
+    build:
+      context: .
+      args:
+        DEVICE_IP: 192.168.0.17
+        DEVICE_NAME: desk_fenetre
+    restart: always
+    networks:
+      - back_network
+  cosy01:
+    container_name: cosy01
+    build:
+      context: .
+      args:
+        DEVICE_IP: 192.168.0.118
+        DEVICE_NAME: Door 3 Sensor
+    restart: always
+    networks:
+      - back_network      
+
+networks:
+  back_network:
+    external: true
+

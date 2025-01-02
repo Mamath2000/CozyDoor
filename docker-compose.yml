@@ -1,24 +1,29 @@
 services:
-  cosy_desk_fenetre:
-    container_name: desk_fenetre
+  cosy_atelier:
+    container_name: cozy_atelier
     build:
       context: .
       args:
-        DEVICE_IP: 192.168.0.17
-        DEVICE_NAME: desk_fenetre
+        DEVICE_IP: 192.168.10.103
+        DEVICE_NAME: porte_atelier2
     restart: always
+    volumes:
+      - ./config:/app/config
     networks:
       - back_network
-  cosy01:
-    container_name: cosy01
+
+  cosy_sdb:
+    container_name: cozy_sdb
     build:
       context: .
       args:
-        DEVICE_IP: 192.168.0.118
-        DEVICE_NAME: Door 3 Sensor
+        DEVICE_IP: 192.168.10.104
+        DEVICE_NAME: velux_sdb
     restart: always
+    volumes:
+      - ./config:/app/config
     networks:
-      - back_network      
+      - back_network
 
 networks:
   back_network:

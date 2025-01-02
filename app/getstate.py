@@ -15,10 +15,10 @@ from os.path import exists
 
 
 # =================== Configuration ===============================
-mqtt_host = "192.168.0.199"
+mqtt_host = "192.168.10.130"
 mqtt_port = 1883
 mqtt_user = "pzem2mqtt"
-mqtt_pwd = "me65AQjvMRyPN5jMhDL"
+mqtt_pwd = "mekakocapckapokL"
 auto_discovery = True
 discovery_topic = "homeassistant"
 base_topic = "CosyLife"

@@ -52,7 +52,7 @@ class tcp_client(object):
 
     def disconnect(self):
         if self._connect:
-            try: 
+            try:
                 #self._connect.shutdown(socket.SHUT_RDWR)
                 self._connect.close()
             except:

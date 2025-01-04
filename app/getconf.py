@@ -1,6 +1,12 @@
+import json
+import logging
 import sys
+import time
 from io import StringIO
-# from ipaddress import ip_address
+from ipaddress import ip_address
+from os.path import exists
+
+
 from tcp_client import tcp_client
 
 ip='192.168.0.17'
@@ -22,6 +28,8 @@ if a._connect:
         device_info_str += f'    device_type: {a._device_type_code}\n'
 
         print(device_info_str)
+        print(device_info)
+
         state = a.query()
         print(a.query())
 

@@ -28,15 +28,96 @@ def device_is_available(ip):
     response = os.system(f"ping -c 1 -W 1 {ip} > /dev/null 2>&1")
     return response == 0
 
+def generate_ha_discovery_payload(name, friendly_name):
+    return {
+        "device": {
+            "identifiers": [f"cosylife_{name}"],
+            "manufacturer": "CosyLife",
+            "model": "Door sensor",
+            "name": friendly_name
+        },
+        "origin": {
+            "name": "Home Assistant"
+        },
+        "components": {
+            f"{name}_contact": {
+                "platform": "binary_sensor",
+                "object_id": f"{name}_contact",
+                "unique_id": f"cosylife_{name}_contact",
+                "state_topic": f"CosyLife/{name}",
+                "json_attributes_topic": f"CosyLife/{name}",
+                "value_template": "{{ value_json.contact }}",
+                "payload_off": "off",
+                "payload_on": "on",
+                "device_class": "door",
+                "name": "Contact",
+                "has_entity_name": True
+            },
+            f"{name}_battery_low": {
+                "platform": "binary_sensor",
+                "object_id": f"{name}_battery_low",
+                "unique_id": f"cosylife_{name}_battery_low",
+                "state_topic": f"CosyLife/{name}",
+                "json_attributes_topic": f"CosyLife/{name}",
+                "entity_category": "diagnostic",
+                "payload_off": "off",
+                "payload_on": "on",
+                "name": "Alerte Batterie",
+                "device_class": "battery",
+                "value_template": "{{ value_json.battery_low }}"
+            },
+            f"{name}_battery": {
+                "platform": "sensor",
+                "object_id": f"{name}_battery",
+                "unique_id": f"cosylife_{name}_battery",
+                "state_topic": f"CosyLife/{name}",
+                "json_attributes_topic": f"CosyLife/{name}",
+                "enabled_by_default": True,
+                "entity_category": "diagnostic",
+                "device_class": "battery",
+                "state_class": "measurement",
+                "unit_of_measurement": "%",
+                "name": "Batterie",
+                "value_template": "{{ value_json.battery }}"
+            },
+            f"{name}_ip": {
+                "platform": "sensor",
+                "object_id": f"{name}_ip",
+                "unique_id": f"cosylife_{name}_ip",
+                "state_topic": f"CosyLife/{name}",
+                "json_attributes_topic": f"CosyLife/{name}",
+                "enabled_by_default": True,
+                "entity_category": "diagnostic",
+                "name": "IP Adresse",
+                "value_template": "{{ value_json.ip }}"
+            }
+        }
+    }
+
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python getDoorState.py <ip> <nom_composant>")
+    if len(sys.argv) < 4:
+        print("Usage: python getDoorState.py <ip> <nom_composant> <friendly_name>")
         sys.exit(1)
 
     ip = sys.argv[1]
     name = sys.argv[2]
+    friendly_name = sys.argv[3]
     logger.info(" ==== Starting CosyLife Reader (mamath) === ")
     logger.debug("Scan IP : " + str(ip))
+
+    # MQTT configuration pour la découverte
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.on_connect = on_connect
+    # client.username_pw_set(mqtt_user, mqtt_pwd)
+    client.connect(mqtt_host, mqtt_port, keepalive=120)
+    client.loop_start()
+
+    # Génération et publication du payload de découverte Home Assistant
+    ha_payload = generate_ha_discovery_payload(name, friendly_name)
+    discovery_topic = f"homeassistant/device/{name}/config"
+    client.publish(discovery_topic, json.dumps(ha_payload), qos=0, retain=True)
+    logger.info(f"Payload Home Assistant publié sur {discovery_topic}")
+
 
     while True:
         # Attente que l'IP soit disponible sur le réseau
@@ -56,8 +137,7 @@ def main():
                     logger.debug("Connected to device")
 
                     # MQTT configuration
-                    # client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-                    client = mqtt.Client()
+                    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
                     client.on_connect = on_connect
 
                     logger.info("Connection to mqtt broker : http://{}:{}".format(mqtt_host, mqtt_port))

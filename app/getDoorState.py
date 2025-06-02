@@ -16,8 +16,8 @@ import paho.mqtt.client as mqtt
 from tcp_client import tcp_client
 
 
-logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
-#logging.basicConfig(level=logging.DEBUG, format='   %(asctime)s %(levelname)-8s %(message)s')
+#logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='   %(asctime)s %(levelname)-8s %(message)s')
 
 logger = logging.getLogger()
 

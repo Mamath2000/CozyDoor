@@ -9,7 +9,7 @@ services:
     restart: always
     volumes:
       - ./config.json:/app/config.json:ro
-    command: python3 ./app/getDoorState.py
+    command: python3 /app/app/getDoorState.py
     networks:
       - back_network
 

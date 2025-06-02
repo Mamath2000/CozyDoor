@@ -1,28 +1,17 @@
-FROM python:3-slim-buster
+FROM python:3.11-slim
 
-LABEL maintainer="mamath"
-
-ARG DEVICE_IP
-ARG DEVICE_NAME
-ENV IP ${DEVICE_IP}
-ENV NAME ${DEVICE_NAME}
-
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt && \
-    apt-get update && apt-get install -y \
-        fping && \
-    apt-get clean
-
-WORKDIR /app
-WORKDIR /app/config
-VOLUME /app/config
+# Variables d'environnement pour éviter les prompts pip
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-ADD app/* /app
+# Copie du code source et des dépendances
+COPY app/ ./app/
+COPY requirements.txt .
 
+# Installation des dépendances
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# CMD [ "python3", "/app/getPzemData.py"]
-CMD ["/bin/bash", "/app/loop.sh"]
-
-
+# Commande par défaut (sera surchargée par docker-compose)
+CMD ["python3", "app/getDoorState.py"]

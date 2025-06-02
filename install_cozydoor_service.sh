@@ -19,6 +19,10 @@ USER="root"
 WORKDIR="$PWD/app"
 PYTHON="$WORKDIR/venv/bin/python3"
 
+# 0. Apt update and install dependencies
+apt update
+apt install -y python3 python3-venv
+
 # 1. Création de l'environnement virtuel et installation des dépendances
 cd "$WORKDIR" || exit 1
 python3 -m venv venv

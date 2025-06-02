@@ -162,9 +162,9 @@ def main():
 
                     state = a.query()
 
-                    logger.debug("Status : " + str(state))
-                    logger.debug("Device ID : " + str(device_id))
-                    logger.debug("Model : " + str(device_model_name))
+                    logger.info("Status : " + str(state))
+                    logger.info("Device ID : " + str(device_id))
+                    logger.info("Model : " + str(device_model_name))
 
                     a.disconnect()
                     logger.debug("Disconnected")
@@ -176,6 +176,7 @@ def main():
                             "battery_low": "on" if state["9"] < 300 else "off",
                             "device_id": device_id,
                             "device_model_name": device_model_name,
+                            "friendly_name": friendly_name,
                             "ip": str(ip)
                         }
 

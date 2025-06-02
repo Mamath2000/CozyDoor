@@ -14,4 +14,4 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Commande par défaut (sera surchargée par docker-compose)
-CMD ["python3", "app/getDoorState.py"]
+CMD ["python3", "./app/getDoorState.py"]

@@ -7,7 +7,8 @@ services:
       - FRIENDLY_NAME=Test Sensor
       - TZ=Europe/Paris
     restart: always
-    
+    volumes:
+      - ./config.json:/app/config.json:ro
     command: python3 /app/getDoorState.py
     networks:
       - back_network

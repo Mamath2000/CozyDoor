@@ -4,14 +4,17 @@ import sys
 import time
 import os
 
+# Lecture du fichier de config à la racine
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
+with open(CONFIG_PATH, "r") as f:
+    config = json.load(f)
+mqtt_host = config.get("mqtt_host", "localhost")
+mqtt_port = config.get("mqtt_port", 1883)
+base_topic = config.get("base_topic", "CosyLife")
+
 import paho.mqtt.client as mqtt
 from tcp_client import tcp_client
 
-# =================== Configuration ===============================
-mqtt_host = "192.168.10.101"
-mqtt_port = 1883
-base_topic = "CosyLife"
-# ==================================================================
 
 logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
 logger = logging.getLogger()

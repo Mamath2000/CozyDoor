@@ -1,5 +1,6 @@
 {
   "mqtt_host": "192.168.0.101",
   "mqtt_port": 1883,
-  "base_topic": "CosyLife"
+  "base_topic": "CosyLife",
+  "debug": true
 }

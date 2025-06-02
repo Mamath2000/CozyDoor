@@ -11,13 +11,17 @@ with open(CONFIG_PATH, "r") as f:
 mqtt_host = config.get("mqtt_host", "localhost")
 mqtt_port = config.get("mqtt_port", 1883)
 base_topic = config.get("base_topic", "CosyLife")
+debug_mode = config.get("debug", False)
 
 import paho.mqtt.client as mqtt
 from tcp_client import tcp_client
 
 
-#logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
-logging.basicConfig(level=logging.DEBUG, format='   %(asctime)s %(levelname)-8s %(message)s')
+# Configuration du logger selon le mode debug
+if debug_mode:
+    logging.basicConfig(level=logging.DEBUG, format='   %(asctime)s %(levelname)-8s %(message)s')
+else:
+    logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
 
 logger = logging.getLogger()
 

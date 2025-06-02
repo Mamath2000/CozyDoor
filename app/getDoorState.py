@@ -187,8 +187,9 @@ def main():
 
                         logger.debug("Battery : {0}".format(state["9"]/10))
                         logger.debug("State : {0}".format(state["7"]))
-                # else:
-                #     logger.error("Connexion au device impossible")
+                else:
+                    logger.info("Connexion au device impossible")
+            
             except Exception as e:
                 logger.error(f"Erreur lors de la récupération d'état : {e}")
 

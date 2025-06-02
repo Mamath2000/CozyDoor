@@ -17,6 +17,8 @@ from tcp_client import tcp_client
 
 
 logging.basicConfig(level=logging.ERROR, format='   %(asctime)s %(levelname)-8s %(message)s')
+#logging.basicConfig(level=logging.DEBUG, format='   %(asctime)s %(levelname)-8s %(message)s')
+
 logger = logging.getLogger()
 
 def on_connect(client, userdata, flags, reason_code, properties=None):
@@ -97,14 +99,30 @@ def generate_ha_discovery_payload(name, friendly_name):
         }
     }
 
-def main():
-    if len(sys.argv) < 4:
-        print("Usage: python getDoorState.py <ip> <nom_composant> <friendly_name>")
-        sys.exit(1)
 
-    ip = sys.argv[1]
-    name = sys.argv[2]
-    friendly_name = sys.argv[3]
+def get_config_args():
+    # Priorité aux variables d'environnement
+    ip = os.environ.get("DEVICE_IP")
+    name = os.environ.get("DEVICE_NAME")
+    friendly_name = os.environ.get("FRIENDLY_NAME")
+
+    # Si une des variables n'est pas définie, on regarde les arguments
+    if not (ip and name and friendly_name):
+        if len(sys.argv) >= 4:
+            ip = ip or sys.argv[1]
+            name = name or sys.argv[2]
+            friendly_name = friendly_name or sys.argv[3]
+        else:
+            print("Usage: python getDoorState.py <ip> <nom_composant> <friendly_name>")
+            print("Ou définissez les variables d'environnement IP, NAME et FRIENDLY_NAME")
+            sys.exit(1)
+    return ip, name, friendly_name
+
+def main():
+    # Récupération des arguments de configuration
+    ip, name, friendly_name = get_config_args()
+
+    # Configuration du logger
     logger.info(" ==== Starting CosyLife Reader (mamath) === ")
     logger.debug("Scan IP : " + str(ip))
 

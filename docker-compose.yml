@@ -2,8 +2,8 @@ services:
   cosy_test_sensor:
     build: .
     environment:
-      - IP=192.168.90.168
-      - NAME=test_sensor
+      - DEVICE_IP=192.168.90.168
+      - DEVICE_NAME=test_sensor
       - FRIENDLY_NAME=Test Sensor
       - TZ=Europe/Paris
     restart: always

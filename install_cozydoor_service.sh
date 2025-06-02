@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Usage: sudo ./install_cozydoor_service.sh <IP> <NOM_COMPOSANT>
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Merci de lancer ce script en tant que root (sudo)."
+  exit 1
+fi
+
+if [ $# -ne 2 ]; then
+  echo "Usage: sudo $0 <IP> <NOM_COMPOSANT>"
+  exit 1
+fi
+
+IP="$1"
+NAME="$2"
+USER="root"
+WORKDIR="$PWD/app"
+PYTHON="$WORKDIR/venv/bin/python3"
+
+# 1. Création de l'environnement virtuel et installation des dépendances
+cd "$WORKDIR" || exit 1
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r ../requirements.txt
+deactivate
+
+# 2. Création du fichier de service systemd
+SERVICE_FILE="/etc/systemd/system/cozydoor.service"
+
+cat > "$SERVICE_FILE" <<EOF
+[Unit]
+Description=Service CozyDoor - getDoorState
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$WORKDIR
+ExecStart=$PYTHON $WORKDIR/getDoorState.py $IP $NAME
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 3. Activation et démarrage du service
+systemctl daemon-reload
+systemctl enable cozydoor.service
+systemctl restart cozydoor.service
+
+echo "Service cozydoor installé et démarré."
+echo "Vérifiez le statut avec : sudo systemctl status cozydoor.service"

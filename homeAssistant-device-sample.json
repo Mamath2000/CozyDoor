@@ -1,0 +1,63 @@
+{
+  "device": {
+    "identifiers": ["cosylife_test_sensor"],
+    "manufacturer": "CosyLife",
+    "model": "Door sensor",
+    "name": "Sensor de Test" },
+  "origin": {
+    "name": "Home Assistant"
+  },
+  "components": {
+    "test_sensor_contact": {
+      "platform": "binary_sensor",
+      "object_id": "test_sensor_contact",
+      "unique_id": "cosylife_test_sensor_contact",
+      "state_topic": "CosyLife/test_sensor",
+      "json_attributes_topic": "CosyLife/test_sensor",
+      "value_template": "{{ value_json.contact }}",
+      "payload_off": "off",
+      "payload_on": "on",
+      "device_class": "door",
+      "name": "Contact",
+      "has_entity_name": true
+    },
+    "test_sensor_battery_low":{
+      "platform": "binary_sensor",
+      "object_id": "test_sensor_battery_low",
+      "unique_id": "cosylife_test_sensor_battery_low",
+      "state_topic": "CosyLife/test_sensor",
+      "json_attributes_topic": "CosyLife/test_sensor",
+      "entity_category": "diagnostic",
+      "payload_off": "off",
+      "payload_on": "on",
+      "name": "Alerte Batterie",
+      "device_class": "battery",
+      "value_template": "{{ value_json.battery_low }}"
+    },
+    "test_sensor_battery":{
+      "platform": "sensor",
+      "object_id": "test_sensor_battery",
+      "unique_id": "cosylife_test_sensor_battery",
+      "state_topic": "CosyLife/test_sensor",
+      "json_attributes_topic": "CosyLife/test_sensor",
+      "enabled_by_default": true,
+      "entity_category": "diagnostic",
+      "device_class": "battery",
+      "state_class": "measurement",
+      "unit_of_measurement": "%",
+      "name": "Batterie",
+      "value_template": "{{ value_json.battery }}"
+    },
+    "test_sensor_ip":{
+      "platform": "sensor",
+      "object_id": "test_sensor_ip",
+      "unique_id": "cosylife_test_sensor_ip",
+      "state_topic": "CosyLife/test_sensor",
+      "json_attributes_topic": "CosyLife/test_sensor",
+      "enabled_by_default": true,
+      "entity_category": "diagnostic",
+      "name": "IP Adresse",
+      "value_template": "{{ value_json.ip }}"
+    }
+  }
+}

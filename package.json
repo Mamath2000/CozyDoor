@@ -1,0 +1,23 @@
+{
+  "name": "cozydoor",
+  "version": "1.0.0",
+  "description": "CozyDoor - Door sensor integration with Home Assistant via MQTT",
+  "main": "app/getDoorState.js",
+  "type": "module",
+  "scripts": {
+    "start": "node app/getDoorState.js",
+    "getconf": "node app/getconf.js"
+  },
+  "keywords": [
+    "mqtt",
+    "home-assistant",
+    "iot",
+    "door-sensor"
+  ],
+  "author": "Mamath",
+  "license": "MIT",
+  "dependencies": {
+    "mqtt": "^5.3.5",
+    "axios": "^1.6.5"
+  }
+}

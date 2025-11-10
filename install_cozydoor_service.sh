@@ -17,33 +17,29 @@ NAME="$2"
 FRIENDLY_NAME="$3"
 USER="root"
 WORKDIR="$PWD/app"
-PYTHON="$WORKDIR/venv/bin/python3"
+NODE_BIN="/usr/bin/node"
 
 # 0. Apt update and install dependencies
 apt update
-apt install -y python3 python3-venv
+apt install -y nodejs npm
 
-# 1. Création de l'environnement virtuel et installation des dépendances
-cd "$WORKDIR" || exit 1
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r ../requirements.txt
-deactivate
+# 1. Installation des dépendances Node.js
+cd "$PWD" || exit 1
+npm install
 
 # 2. Création du fichier de service systemd
 SERVICE_FILE="/etc/systemd/system/cozydoor_$NAME.service"
 
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=Service CozyDoor - getDoorState
+Description=Service CozyDoor - getDoorState (Node.js)
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
 WorkingDirectory=$WORKDIR
-ExecStart=$PYTHON $WORKDIR/getDoorState.py $IP $NAME "$FRIENDLY_NAME"
+ExecStart=$NODE_BIN $WORKDIR/getDoorState.js $IP $NAME "$FRIENDLY_NAME"
 Restart=on-failure
 RestartSec=3
 

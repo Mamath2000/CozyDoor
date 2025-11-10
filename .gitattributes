@@ -1,0 +1,31 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Scripts shell
+*.sh text eol=lf
+
+# JavaScript / Node.js
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+
+# Configuration
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Python (ancien code)
+*.py text eol=lf
+
+# Documentation
+README.md text eol=lf
+LICENSE text eol=lf
+CHANGELOG.md text eol=lf
+
+# Fichiers binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

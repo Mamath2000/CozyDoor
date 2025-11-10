@@ -1,0 +1,43 @@
+# Fichiers Python (ancien code)
+*.py
+requirements.txt
+app/venv/
+app/__pycache__/
+
+# Tests et développement
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation de développement
+MAKE_COMMANDS.md
+QUICKSTART.md
+
+# Scripts d'installation système
+install_cozydoor_service.sh
+quick_install.sh
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.travis.yml
+.gitlab-ci.yml
+
+# Fichiers de configuration exemple
+config.json.sample
+homeAssistant-device-sample.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Configuration locale
+config.json

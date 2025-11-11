@@ -1,6 +1,6 @@
 {
   "name": "cozydoor",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CozyDoor - Door sensor integration with Home Assistant via MQTT",
   "main": "app/monitorAll.js",
   "type": "module",

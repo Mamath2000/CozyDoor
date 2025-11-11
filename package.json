@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node app/getDoorState.js",
+    "monitor": "node app/monitorAll.js",
     "getconf": "node app/getconf.js"
   },
   "keywords": [

@@ -157,11 +157,11 @@ npm audit fix
 make dev IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"
 ```
 
-### Vérifier les logs du service
+### Vérifier les logs Docker
 
 ```bash
-make logs NAME=porte_entree
-make logs-tail NAME=porte_entree
+make docker-logs
+make docker-restart
 ```
 
 ## 🔒 Sécurité

@@ -15,7 +15,6 @@ MAKE_COMMANDS.md
 QUICKSTART.md
 
 # Scripts d'installation système
-install_cozydoor_service.sh
 quick_install.sh
 
 # Git

@@ -1,4 +1,4 @@
-.PHONY: help install config test-getconf run install-service uninstall-service status restart logs clean
+.PHONY: help install config test-getconf run monitor clean
 
 # Variables par défaut
 IP ?= 192.168.0.17
@@ -26,11 +26,9 @@ help: ## Affiche cette aide
 	@echo "$(GREEN)Exemples:$(NC)"
 	@echo "  make install"
 	@echo "  make config"
+	@echo "  make monitor                    # Surveiller tous les capteurs du config.json"
 	@echo "  make test-getconf IP=192.168.0.18"
-	@echo "  make run IP=192.168.0.17 NAME=garage FRIENDLY_NAME=\"Porte Garage\""
-	@echo "  make install-service IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME=\"Porte d'Entrée\""
-	@echo "  make status NAME=porte_entree"
-	@echo "  make logs NAME=porte_entree"
+	@echo "  make docker-up                  # Lancer avec Docker"
 	@echo ""
 
 install: ## Installe les dépendances Node.js
@@ -58,6 +56,7 @@ test-getconf: ## Teste la connexion à un appareil (usage: make test-getconf IP=
 	node app/getconf.js $(IP)
 
 run: ## Lance getDoorState en mode manuel (usage: make run IP=... NAME=... FRIENDLY_NAME=...)
+run: ## Lance getDoorState en mode manuel (usage: make run IP=... NAME=... FRIENDLY_NAME=...)
 	@if [ ! -f config.json ]; then \
 		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
 		echo "$(YELLOW)→ Exécutez 'make config' d'abord$(NC)"; \
@@ -70,61 +69,8 @@ run: ## Lance getDoorState en mode manuel (usage: make run IP=... NAME=... FRIEN
 	@echo ""
 	node app/getDoorState.js $(IP) $(NAME) $(FRIENDLY_NAME)
 
-install-service: ## Installe le service systemd (usage: sudo make install-service IP=... NAME=... FRIENDLY_NAME=...)
-	@if [ "$(shell id -u)" != "0" ]; then \
-		echo "$(RED)✗ Cette commande nécessite les droits root$(NC)"; \
-		echo "$(YELLOW)→ Utilisez: sudo make install-service IP=... NAME=... FRIENDLY_NAME=...$(NC)"; \
-		exit 1; \
-	fi
-	@if [ ! -f config.json ]; then \
-		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
-		echo "$(YELLOW)→ Exécutez 'make config' d'abord$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)Installation du service cozydoor_$(NAME)...$(NC)"
-	./install_cozydoor_service.sh $(IP) $(NAME) $(FRIENDLY_NAME)
-	@echo "$(GREEN)✓ Service installé avec succès$(NC)"
-	@echo "$(YELLOW)→ Utilisez 'make status NAME=$(NAME)' pour vérifier$(NC)"
+clean: ## Nettoie les dépendances et fichiers générés
 
-uninstall-service: ## Désinstalle le service systemd (usage: sudo make uninstall-service NAME=...)
-	@if [ "$(shell id -u)" != "0" ]; then \
-		echo "$(RED)✗ Cette commande nécessite les droits root$(NC)"; \
-		echo "$(YELLOW)→ Utilisez: sudo make uninstall-service NAME=...$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)Désinstallation du service cozydoor_$(NAME)...$(NC)"
-	systemctl stop cozydoor_$(NAME).service || true
-	systemctl disable cozydoor_$(NAME).service || true
-	rm -f /etc/systemd/system/cozydoor_$(NAME).service
-	systemctl daemon-reload
-	@echo "$(GREEN)✓ Service désinstallé$(NC)"
-
-status: ## Affiche le statut du service (usage: make status NAME=...)
-	@echo "$(BLUE)Statut du service cozydoor_$(NAME):$(NC)"
-	@systemctl status cozydoor_$(NAME).service || echo "$(RED)Service non trouvé$(NC)"
-
-restart: ## Redémarre le service (usage: sudo make restart NAME=...)
-	@if [ "$(shell id -u)" != "0" ]; then \
-		echo "$(RED)✗ Cette commande nécessite les droits root$(NC)"; \
-		echo "$(YELLOW)→ Utilisez: sudo make restart NAME=...$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)Redémarrage du service cozydoor_$(NAME)...$(NC)"
-	systemctl restart cozydoor_$(NAME).service
-	@echo "$(GREEN)✓ Service redémarré$(NC)"
-
-logs: ## Affiche les logs du service (usage: make logs NAME=...)
-	@echo "$(BLUE)Logs du service cozydoor_$(NAME):$(NC)"
-	@echo "$(YELLOW)(Ctrl+C pour quitter)$(NC)"
-	@journalctl -u cozydoor_$(NAME).service -f
-
-logs-tail: ## Affiche les dernières lignes des logs (usage: make logs-tail NAME=...)
-	@echo "$(BLUE)Dernières logs du service cozydoor_$(NAME):$(NC)"
-	@journalctl -u cozydoor_$(NAME).service -n 50 --no-pager
-
-list-services: ## Liste tous les services CozyDoor installés
-	@echo "$(BLUE)Services CozyDoor installés:$(NC)"
-	@systemctl list-units --type=service --all | grep cozydoor || echo "$(YELLOW)Aucun service trouvé$(NC)"
 
 clean: ## Nettoie les fichiers temporaires et node_modules
 	@echo "$(BLUE)Nettoyage...$(NC)"
@@ -147,7 +93,6 @@ setup: install config ## Installation complète (dépendances + configuration)
 	@echo "  1. Éditez config.json avec vos paramètres MQTT"
 	@echo "  2. Testez la connexion: make test-getconf IP=<votre_ip>"
 	@echo "  3. Testez manuellement: make run IP=<votre_ip> NAME=<nom> FRIENDLY_NAME=<nom_convivial>"
-	@echo "  4. Installez comme service: sudo make install-service IP=<votre_ip> NAME=<nom> FRIENDLY_NAME=<nom_convivial>"
 	@echo ""
 
 dev: ## Lance en mode développement avec logs debug
@@ -158,3 +103,90 @@ dev: ## Lance en mode développement avec logs debug
 	fi
 	@echo "Vérifiez que debug:true est dans config.json"
 	node app/getDoorState.js $(IP) $(NAME) $(FRIENDLY_NAME)
+
+# ==============================================================================
+# Commandes Docker
+# ==============================================================================
+
+docker-build: ## Construit l'image Docker
+	@echo "$(BLUE)Construction de l'image Docker...$(NC)"
+	docker build -t cozydoor:latest .
+	@echo "$(GREEN)✓ Image Docker construite$(NC)"
+
+docker-run: ## Lance le container Docker (mode host)
+	@if [ ! -f config.json ]; then \
+		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
+		echo "$(YELLOW)→ Exécutez 'make config' d'abord$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Lancement du container Docker...$(NC)"
+	docker run --rm --network host -v $(PWD)/config.json:/app/config.json:ro cozydoor:latest
+	@echo "$(GREEN)✓ Container arrêté$(NC)"
+
+docker-up: ## Lance avec docker-compose
+	@if [ ! -f config.json ]; then \
+		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Démarrage avec docker-compose...$(NC)"
+	docker-compose up -d
+	@echo "$(GREEN)✓ Container démarré$(NC)"
+	@echo "$(YELLOW)→ Utilisez 'make docker-logs' pour voir les logs$(NC)"
+
+docker-down: ## Arrête docker-compose
+	@echo "$(BLUE)Arrêt du container...$(NC)"
+	docker-compose down
+	@echo "$(GREEN)✓ Container arrêté$(NC)"
+
+docker-logs: ## Affiche les logs du container Docker
+	docker-compose logs -f
+
+docker-restart: ## Redémarre le container Docker
+	@echo "$(BLUE)Redémarrage du container...$(NC)"
+	docker-compose restart
+	@echo "$(GREEN)✓ Container redémarré$(NC)"
+
+docker-dev: ## Lance en mode développement avec docker-compose
+	@if [ ! -f config.json ]; then \
+		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Démarrage en mode développement...$(NC)"
+	docker-compose -f docker-compose.dev.yml up
+
+docker-clean: ## Nettoie les images et containers Docker
+	@echo "$(BLUE)Nettoyage Docker...$(NC)"
+	docker-compose down -v
+	docker rmi cozydoor:latest 2>/dev/null || true
+	@echo "$(GREEN)✓ Nettoyage terminé$(NC)"
+
+docker-shell: ## Ouvre un shell dans le container
+	docker-compose exec cozydoor sh
+
+docker-publish: ## Build et publie l'image sur Docker Hub (incrémente la version)
+	@echo "$(BLUE)Build et publication Docker...$(NC)"
+	@if [ ! -x build-docker-image.sh ]; then \
+		chmod +x build-docker-image.sh; \
+	fi
+	./build-docker-image.sh
+	@echo "$(GREEN)✓ Publication terminée$(NC)"
+
+monitor: ## Surveille tous les capteurs configurés dans config.json
+	@if [ ! -f config.json ]; then \
+		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
+		echo "$(YELLOW)→ Exécutez 'make config' d'abord$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Lancement du monitoring multi-capteurs...$(NC)"
+	@echo "$(YELLOW)Configuration : config.json$(NC)"
+	@echo ""
+	npm run monitor
+
+	@if [ "$(shell id -u)" != "0" ]; then \
+		echo "$(RED)✗ Cette commande nécessite les droits root$(NC)"; \
+		echo "$(YELLOW)→ Utilisez: sudo make monitor-restart$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Redémarrage du service cozydoor-monitor...$(NC)"
+	systemctl restart cozydoor-monitor.service
+	@echo "$(GREEN)✓ Service redémarré$(NC)"

@@ -28,6 +28,7 @@ make test-getconf IP=192.168.0.17
 
 ## 🏃 Exécution en mode manuel (développement)
 
+
 ```bash
 # Lancer le monitoring d'un capteur
 make run IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
@@ -35,124 +36,80 @@ make run IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
 
 **Pour arrêter :** `Ctrl+C`
 
-## 🔧 Installation comme service (production)
+## 🐳 Déploiement avec Docker (production recommandée)
 
 ```bash
-# Installer le service
-sudo make install-service IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
+# 1. Construire l'image
+make docker-build
 
-# Vérifier que ça fonctionne
-make status NAME=porte_entree
+# 2. Configurer vos capteurs dans config.json
+nano config.json
 
-# Voir les logs en temps réel
-make logs NAME=porte_entree
+# 3. Lancer en arrière-plan
+make docker-up
+
+# 4. Vérifier les logs
+make docker-logs
+
+# 5. Arrêter
+make docker-down
 ```
 
-## 📊 Commandes de gestion courantes
-
-### Vérifier le statut
-```bash
-make status NAME=porte_entree
-```
-
-### Redémarrer le service
-```bash
-sudo make restart NAME=porte_entree
-```
+## 📊 Commandes de gestion Docker
 
 ### Voir les logs
 ```bash
 # Temps réel (Ctrl+C pour quitter)
-make logs NAME=porte_entree
+make docker-logs
 
-# Dernières 50 lignes
-make logs-tail NAME=porte_entree
+# Redémarrer le container
+make docker-restart
 ```
 
-### Désinstaller un service
+### Gestion avancée
 ```bash
-sudo make uninstall-service NAME=porte_entree
+# Shell dans le container
+make docker-shell
+
+# Nettoyer complètement
+make docker-clean
 ```
 
 ## 🏠 Exemple avec plusieurs capteurs
 
-```bash
-# Porte d'entrée
-sudo make install-service IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
+Éditez `config.json` :
 
-# Porte du garage
-sudo make install-service IP=192.168.0.18 NAME=porte_garage FRIENDLY_NAME="Porte Garage"
-
-# Fenêtre salon
-sudo make install-service IP=192.168.0.19 NAME=fenetre_salon FRIENDLY_NAME="Fenêtre Salon"
-
-# Voir tous les services
-make list-services
-```
-
-## 🐛 Dépannage
-
-### Vérifier les dépendances
-```bash
-make check-deps
-```
-
-### Mode debug
-1. Éditer `config.json` et mettre `"debug": true`
-2. Lancer : `make dev IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"`
-
-### Erreur "device not found"
-- Vérifier que l'IP est correcte
-- Vérifier que l'appareil est sur le même réseau
-- Tester avec ping : `ping 192.168.0.17`
-
-### Service ne démarre pas
-```bash
-# Voir les erreurs
-make logs-tail NAME=porte_entree
-
-# Vérifier le fichier de config
-cat config.json
-
-# Tester manuellement
-make run IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Test"
-```
-
-## 🔄 Mise à jour
-
-```bash
-# Arrêter tous les services
-sudo systemctl stop cozydoor_*.service
-
-# Mettre à jour le code (git pull, etc.)
-
-# Réinstaller les dépendances
-make clean
-make install
-
-# Redémarrer les services
-sudo systemctl start cozydoor_*.service
-```
-
-## 📋 Configuration MQTT typique
-
-**config.json :**
 ```json
 {
-  "mqtt_host": "192.168.0.100",
+  "mqtt_host": "192.168.0.101",
   "mqtt_port": 1883,
   "base_topic": "CosyLife",
-  "debug": false
+  "debug": false,
+  "sensors": [
+    {
+      "ip": "192.168.0.17",
+      "name": "porte_entree",
+      "friendly_name": "Porte d'Entrée"
+    },
+    {
+      "ip": "192.168.0.18",
+      "name": "porte_garage",
+      "friendly_name": "Porte Garage"
+    },
+    {
+      "ip": "192.168.0.19",
+      "name": "fenetre_salon",
+      "friendly_name": "Fenêtre Salon"
+    }
+  ]
 }
 ```
 
-**Avec Home Assistant :**
-- Les appareils apparaissent automatiquement dans Home Assistant
-- Topic MQTT : `CosyLife/<nom_composant>`
-- Découverte automatique : `homeassistant/device/<nom_composant>/config`
-
-## ℹ️ Aide complète
-
+Puis lancez :
 ```bash
-make help
+make docker-up
+# ou en local
+make monitor
 ```
+
+## 🔍 Résolution de problèmes

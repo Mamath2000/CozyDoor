@@ -25,7 +25,7 @@ nano config.json
 ### 3. Lancer
 
 ```bash
-# Avec docker-compose (recommandé)
+# Avec docker compose (recommandé)
 make docker-up
 
 # Ou directement avec Docker
@@ -37,14 +37,40 @@ make docker-run
 | Commande | Description |
 |----------|-------------|
 | `make docker-build` | Construit l'image Docker |
-| `make docker-up` | Démarre avec docker-compose (en arrière-plan) |
+| `make docker-up` | Démarre avec docker compose (en arrière-plan) |
 | `make docker-down` | Arrête le container |
 | `make docker-logs` | Affiche les logs en temps réel |
 | `make docker-restart` | Redémarre le container |
 | `make docker-dev` | Mode développement avec hot reload |
 | `make docker-clean` | Nettoie tout (images, containers, volumes) |
 | `make docker-shell` | Ouvre un shell dans le container |
+| `make docker-health` | Vérifie le health check du container |
 | `make docker-publish` | Build et publie sur Docker Hub (auto-increment version) |
+
+## 🏥 Health Check
+
+Le container dispose d'un **health check** automatique qui vérifie :
+- ✅ Le processus Node.js est actif
+- ✅ La connexion au broker MQTT fonctionne
+
+### Vérifier le statut
+
+```bash
+# Avec Make
+make docker-health
+
+# Ou directement
+docker ps --format "table {{.Names}}\t{{.Status}}"
+docker inspect cozydoor | jq '.[0].State.Health'
+```
+
+### Résultats possibles
+
+- **healthy** ✅ : Tout fonctionne correctement
+- **unhealthy** ❌ : Problème détecté (processus arrêté ou MQTT injoignable)
+- **starting** ⏳ : En cours de démarrage (40s de grace period)
+
+Le health check s'exécute toutes les 30 secondes avec un timeout de 10s.
 
 ## 🚀 Publication sur Docker Hub
 
@@ -171,13 +197,13 @@ make docker-dev
 
 ```bash
 # Voir les logs
-docker-compose logs --tail=100 cozydoor
+docker compose logs --tail=100 cozydoor
 
 # Ouvrir un shell dans le container
 make docker-shell
 
 # Vérifier l'état
-docker-compose ps
+docker compose ps
 
 # Inspecter le réseau
 docker exec cozydoor-dev ip addr
@@ -288,10 +314,10 @@ make docker-up
 **Solution** :
 ```bash
 # Logs en temps réel
-docker-compose logs -f
+docker compose logs -f
 
 # Dernières 100 lignes
-docker-compose logs --tail=100
+docker compose logs --tail=100
 
 # Logs d'un container spécifique
 docker logs cozydoor

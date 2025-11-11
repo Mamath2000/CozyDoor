@@ -101,45 +101,49 @@ docker-run: ## Lance le container Docker (mode host)
 	docker run --rm --network host -v $(PWD)/config.json:/app/config.json:ro cozydoor:latest
 	@echo "$(GREEN)✓ Container arrêté$(NC)"
 
-docker-up: ## Lance avec docker-compose
+docker-up: ## Lance avec docker compose
 	@if [ ! -f config.json ]; then \
 		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)Démarrage avec docker-compose...$(NC)"
-	docker-compose up -d
+	@echo "$(BLUE)Démarrage avec docker compose...$(NC)"
+	docker compose up -d
 	@echo "$(GREEN)✓ Container démarré$(NC)"
 	@echo "$(YELLOW)→ Utilisez 'make docker-logs' pour voir les logs$(NC)"
 
-docker-down: ## Arrête docker-compose
+docker-down: ## Arrête docker compose
 	@echo "$(BLUE)Arrêt du container...$(NC)"
-	docker-compose down
+	docker compose down
 	@echo "$(GREEN)✓ Container arrêté$(NC)"
 
 docker-logs: ## Affiche les logs du container Docker
-	docker-compose logs -f
+	docker compose logs -f
 
 docker-restart: ## Redémarre le container Docker
 	@echo "$(BLUE)Redémarrage du container...$(NC)"
-	docker-compose restart
+	docker compose restart
 	@echo "$(GREEN)✓ Container redémarré$(NC)"
 
-docker-dev: ## Lance en mode développement avec docker-compose
+docker-dev: ## Lance en mode développement avec docker compose
 	@if [ ! -f config.json ]; then \
 		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(BLUE)Démarrage en mode développement...$(NC)"
-	docker-compose -f docker-compose.dev.yml up
+	docker compose -f docker-compose.dev.yml up
 
 docker-clean: ## Nettoie les images et containers Docker
 	@echo "$(BLUE)Nettoyage Docker...$(NC)"
-	docker-compose down -v
+	docker compose down -v
 	docker rmi cozydoor:latest 2>/dev/null || true
 	@echo "$(GREEN)✓ Nettoyage terminé$(NC)"
 
 docker-shell: ## Ouvre un shell dans le container
-	docker-compose exec cozydoor sh
+	docker compose exec cozydoor sh
+
+docker-health: ## Affiche le statut health check du container
+	@echo "$(BLUE)Vérification du health check...$(NC)"
+	@./test-health.sh
 
 docker-publish: ## Build et publie l'image sur Docker Hub (incrémente la version)
 	@echo "$(BLUE)Build et publication Docker...$(NC)"

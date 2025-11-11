@@ -15,8 +15,8 @@ LABEL org.opencontainers.image.title="CozyDoor" \
       org.opencontainers.image.authors="Mamath" \
       org.opencontainers.image.source="https://github.com/Mamath2000/CozyDoor"
 
-# Installer les outils système nécessaires (ping, etc.)
-RUN apk add --no-cache iputils
+# Installer les outils système nécessaires (ping, netcat pour health check)
+RUN apk add --no-cache iputils netcat-openbsd
 
 # Définir le répertoire de travail
 WORKDIR /app

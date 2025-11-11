@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import mqtt from 'mqtt';
 import { TcpClient } from './tcp_client.js';
 import { logger } from './utils.js';
+import { HomeAssistant } from './homeassistant.js';
 
 const execAsync = promisify(exec);
 
@@ -45,79 +46,6 @@ async function deviceIsAvailable(ip) {
 }
 
 /**
- * Génère le payload de découverte Home Assistant
- * @param {string} name 
- * @param {string} friendly_name 
- * @returns {object}
- */
-function generateHaDiscoveryPayload(name, friendly_name) {
-  return {
-    device: {
-      identifiers: [`cosylife_${name}`],
-      manufacturer: 'CosyLife',
-      model: 'Door sensor',
-      name: friendly_name
-    },
-    origin: {
-      name: 'Home Assistant'
-    },
-    components: {
-      [`${name}_contact`]: {
-        platform: 'binary_sensor',
-        object_id: `${name}_contact`,
-        unique_id: `cosylife_${name}_contact`,
-        state_topic: `CosyLife/${name}`,
-        json_attributes_topic: `CosyLife/${name}`,
-        value_template: '{{ value_json.contact }}',
-        payload_off: 'off',
-        payload_on: 'on',
-        device_class: 'door',
-        name: 'Contact',
-        has_entity_name: true
-      },
-      [`${name}_battery_low`]: {
-        platform: 'binary_sensor',
-        object_id: `${name}_battery_low`,
-        unique_id: `cosylife_${name}_battery_low`,
-        state_topic: `CosyLife/${name}`,
-        json_attributes_topic: `CosyLife/${name}`,
-        entity_category: 'diagnostic',
-        payload_off: 'off',
-        payload_on: 'on',
-        name: 'Alerte Batterie',
-        device_class: 'battery',
-        value_template: '{{ value_json.battery_low }}'
-      },
-      [`${name}_battery`]: {
-        platform: 'sensor',
-        object_id: `${name}_battery`,
-        unique_id: `cosylife_${name}_battery`,
-        state_topic: `CosyLife/${name}`,
-        json_attributes_topic: `CosyLife/${name}`,
-        enabled_by_default: true,
-        entity_category: 'diagnostic',
-        device_class: 'battery',
-        state_class: 'measurement',
-        unit_of_measurement: '%',
-        name: 'Batterie',
-        value_template: '{{ value_json.battery }}'
-      },
-      [`${name}_ip`]: {
-        platform: 'sensor',
-        object_id: `${name}_ip`,
-        unique_id: `cosylife_${name}_ip`,
-        state_topic: `CosyLife/${name}`,
-        json_attributes_topic: `CosyLife/${name}`,
-        enabled_by_default: true,
-        entity_category: 'diagnostic',
-        name: 'IP Adresse',
-        value_template: '{{ value_json.ip }}'
-      }
-    }
-  };
-}
-
-/**
  * Fonction de délai
  * @param {number} ms 
  * @returns {Promise<void>}
@@ -130,16 +58,15 @@ function sleep(ms) {
  * Gère un capteur individuel
  * @param {object} sensor 
  * @param {object} mqttClient 
+ * @param {HomeAssistant} ha - Instance Home Assistant
  */
-async function monitorSensor(sensor, mqttClient) {
+async function monitorSensor(sensor, mqttClient, ha) {
   const { name, friendly_name, ip } = sensor;
   
   logger.info(`[${name}] Démarrage de la surveillance pour ${friendly_name} (${ip})`);
   
   // Publication de la découverte Home Assistant
-  const ha_payload = generateHaDiscoveryPayload(name, friendly_name);
-  const discovery_topic = `homeassistant/device/${name}/config`;
-  mqttClient.publish(discovery_topic, JSON.stringify(ha_payload), { qos: 0, retain: true });
+  ha.publishDiscovery(mqttClient, name, friendly_name, ip);
   logger.info(`[${name}] Payload Home Assistant publié`);
 
   while (true) {
@@ -166,17 +93,15 @@ async function monitorSensor(sensor, mqttClient) {
         const state = await client.query();
 
         if (state) {
-          const jsondata = {
-            battery: parseFloat(state['9'] / 10),
-            contact: state['7'] === 1 ? 'on' : 'off',
-            battery_low: state['9'] < 300 ? 'on' : 'off',
-            device_id: device_id,
-            device_model_name: device_model_name,
-            friendly_name: friendly_name,
-            ip: ip
-          };
+          const jsondata = ha.formatSensorData(
+            state,
+            device_id,
+            device_model_name,
+            friendly_name,
+            ip
+          );
 
-          mqttClient.publish(`${base_topic}/${name}`, JSON.stringify(jsondata), { qos: 0, retain: true });
+          ha.publishState(mqttClient, name, jsondata);
           
           logger.debug(`[${name}] État publié - Batterie: ${jsondata.battery}%, Contact: ${jsondata.contact}`);
         }
@@ -217,18 +142,65 @@ async function main() {
 
   logger.info(`${enabledSensors.length} capteur(s) activé(s)`);
 
-  // Connexion MQTT unique partagée
+  // Créer l'instance Home Assistant
+  const ha = new HomeAssistant(base_topic);
+
+  // Connexion MQTT unique partagée avec LWT
   const mqttClient = mqtt.connect(`mqtt://${mqtt_host}:${mqtt_port}`, {
-    keepalive: 120
+    keepalive: 120,
+    will: ha.getLwtConfig()
   });
 
   mqttClient.on('connect', () => {
     logger.info('✓ Connecté au broker MQTT');
+    
+    // Publier la découverte du moniteur
+    ha.publishMonitorDiscovery(mqttClient);
+    logger.info('✓ Device CozyDoor Monitor créé dans Home Assistant');
+    
+    // Publier le statut online
+    ha.publishMonitorStatus(mqttClient, 'online');
+    logger.info('✓ Statut: online');
   });
 
   mqttClient.on('error', (err) => {
     logger.error(`Erreur MQTT: ${err.message}`);
   });
+
+  // Variable pour éviter les appels multiples au shutdown
+  let isShuttingDown = false;
+
+  // Gestion propre de l'arrêt
+  const shutdown = async () => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    logger.info('\n==== Arrêt du service ====');
+    
+    try {
+      // Publier le statut offline
+      ha.publishMonitorStatus(mqttClient, 'offline');
+      
+      // Attendre que le message soit envoyé
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Fermer la connexion MQTT proprement
+      await new Promise((resolve) => {
+        mqttClient.end(false, {}, () => {
+          logger.info('✓ Connexion MQTT fermée');
+          resolve();
+        });
+      });
+    } catch (err) {
+      logger.error(`Erreur lors de l'arrêt: ${err.message}`);
+    }
+    
+    logger.info('✓ Arrêt terminé');
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   // Attendre la connexion MQTT
   await new Promise((resolve) => {
@@ -240,7 +212,7 @@ async function main() {
   });
 
   // Lancer la surveillance de chaque capteur en parallèle
-  const promises = enabledSensors.map(sensor => monitorSensor(sensor, mqttClient));
+  const promises = enabledSensors.map(sensor => monitorSensor(sensor, mqttClient, ha));
   
   // Afficher les capteurs surveillés
   enabledSensors.forEach(sensor => {
@@ -250,17 +222,6 @@ async function main() {
   // Attendre toutes les promesses (ne se termine jamais)
   await Promise.all(promises);
 }
-
-// Gestion propre de l'arrêt
-process.on('SIGINT', () => {
-  logger.info('\n==== Arrêt du service ====');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('\n==== Arrêt du service ====');
-  process.exit(0);
-});
 
 // Lancement
 main().catch(err => {

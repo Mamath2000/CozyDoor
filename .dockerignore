@@ -3,10 +3,6 @@ npm-debug.log
 .git
 .gitignore
 .vscode
-*.md
-!README.md
-Makefile
-*.sh
 config.json
 .env
 .DS_Store

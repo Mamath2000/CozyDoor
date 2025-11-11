@@ -5,7 +5,7 @@
 services:
   # CozyDoor Monitor
   cozydoor:
-    build: .
+    image: mathmath350/cozydoor:latest
     container_name: cozydoor
     # MODE HOST OBLIGATOIRE pour scanner le réseau local
     network_mode: host
@@ -15,21 +15,9 @@ services:
       - ./config.json:/app/config.json:ro
     environment:
       - NODE_ENV=production
-      # Variables d'environnement pour la configuration MQTT (optionnel)
-      - MQTT_HOST=192.168.100.190
-      - MQTT_PORT=1883
-    # Health check avancé : vérifie la connexion MQTT et le processus Node
+    # Health check : utilise le script healthcheck.sh qui lit config.json
     healthcheck:
-      test: |
-        sh -c '
-        # Vérifier que le processus Node tourne
-        ps aux | grep -v grep | grep "node.*monitorAll.js" > /dev/null || exit 1
-        
-        # Vérifier la connexion au broker MQTT (avec nc)
-        nc -zv ${MQTT_HOST:-192.168.100.190} ${MQTT_PORT:-1883} 2>&1 > /dev/null || exit 1
-        
-        exit 0
-        '
+      test: ["CMD", "/app/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3

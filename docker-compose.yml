@@ -10,6 +10,13 @@ services:
       - ./config.json:/app/config.json:ro
     environment:
       - NODE_ENV=production
+    # Health check : utilise le script healthcheck.sh qui lit config.json
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     # Logs
     logging:
       driver: "json-file"

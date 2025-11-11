@@ -33,6 +33,10 @@ COPY app/ ./app/
 # Copier le fichier de configuration (sera remplacé par un volume)
 COPY config.json.sample ./config.json.sample
 
+# Copier le script de health check
+COPY healthcheck.sh ./healthcheck.sh
+RUN chmod +x ./healthcheck.sh
+
 # Créer un utilisateur non-root
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \

@@ -126,14 +126,8 @@ make help
 # Tester la connexion à un appareil
 make test-getconf IP=192.168.0.17
 
-# Exécuter en mode manuel (développement)
-make run IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
-
 # Surveiller tous les capteurs depuis config.json
 make monitor
-
-# Mode développement avec debug
-make dev IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
 
 # Vérifier les dépendances système
 make check-deps
@@ -142,24 +136,17 @@ make check-deps
 ### Exécution manuelle
 
 ```bash
-# Surveiller un capteur de porte
-node app/getDoorState.js <IP> <NOM_COMPOSANT> <FRIENDLY_NAME>
+# Surveiller tous les capteurs configurés
+node app/monitorAll.js
+
+# Obtenir les informations d'un appareil
+node app/getconf.js <IP>
 
 # Exemple
-node app/getDoorState.js 192.168.0.17 porte_entree "Porte d'Entrée"
-```
-
-### Obtenir les informations d'un appareil
-
-```bash
-# Avec Make
-make test-getconf IP=192.168.0.17
-
-# Ou directement
 node app/getconf.js 192.168.0.17
 ```
 
-### Surveillance multi-capteurs
+## 🏠 Configuration multi-capteurs
 
 Configurez plusieurs capteurs dans `config.json` :
 
@@ -196,8 +183,7 @@ make docker-up
 ```
 CozyDoor/
 ├── app/
-│   ├── monitorAll.js       # Surveillance multi-capteurs
-│   ├── getDoorState.js     # Script de surveillance individuel
+│   ├── monitorAll.js       # Surveillance multi-capteurs (principal)
 │   ├── getconf.js          # Script pour obtenir les infos d'un appareil
 │   ├── tcp_client.js       # Client TCP pour communiquer avec les appareils
 │   └── utils.js            # Fonctions utilitaires

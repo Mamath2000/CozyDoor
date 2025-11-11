@@ -26,12 +26,11 @@ make test-getconf IP=192.168.0.17
   ...
 ```
 
-## 🏃 Exécution en mode manuel (développement)
-
+## 🏃 Surveillance multi-capteurs (développement)
 
 ```bash
-# Lancer le monitoring d'un capteur
-make run IP=192.168.0.17 NAME=porte_entree FRIENDLY_NAME="Porte d'Entrée"
+# Surveiller tous les capteurs configurés dans config.json
+make monitor
 ```
 
 **Pour arrêter :** `Ctrl+C`

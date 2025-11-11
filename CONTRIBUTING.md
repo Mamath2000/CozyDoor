@@ -5,11 +5,13 @@
 ```
 CozyDoor/
 ├── app/                    # Code source principal
-│   ├── getDoorState.js    # Service de surveillance des capteurs
+│   ├── monitorAll.js      # Surveillance multi-capteurs (principal)
 │   ├── getconf.js         # Utilitaire de configuration
 │   ├── tcp_client.js      # Client TCP pour CosyLife
 │   └── utils.js           # Fonctions utilitaires
 ├── config.json.sample     # Exemple de configuration
+├── Dockerfile             # Image Docker
+├── docker-compose.yml     # Configuration Docker
 ├── .gitignore            # Fichiers ignorés par Git
 ├── .gitattributes        # Attributs Git
 ├── .npmignore            # Fichiers ignorés par npm
@@ -58,7 +60,7 @@ git checkout -b feature/ma-nouvelle-fonctionnalite
 make test-getconf IP=192.168.0.17
 
 # Lancer en mode développement
-make dev IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"
+make monitor
 ```
 
 ### 3. Vérifier avant de commiter
@@ -71,7 +73,7 @@ git status
 git diff
 
 # Ajouter les fichiers modifiés
-git add app/getDoorState.js
+git add app/monitorAll.js
 git add Makefile
 
 # Commiter avec un message clair
@@ -115,7 +117,7 @@ make test-getconf IP=192.168.0.17
 ### Tester en mode manuel
 
 ```bash
-make run IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"
+make monitor
 ```
 
 ### Vérifier les dépendances
@@ -154,7 +156,7 @@ npm audit fix
 
 2. Lancer l'application :
 ```bash
-make dev IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"
+make monitor
 ```
 
 ### Vérifier les logs Docker

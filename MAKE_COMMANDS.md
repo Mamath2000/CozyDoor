@@ -9,8 +9,6 @@
 | `make install` | Installe les dépendances npm | `make install` |
 | `make config` | Crée config.json | `make config` |
 | `make test-getconf` | Teste la connexion | `make test-getconf IP=192.168.0.17` |
-| `make run` | Lance en mode manuel | `make run IP=192.168.0.17 NAME=porte FRIENDLY_NAME="Porte"` |
 | `make monitor` | Surveille tous les capteurs | `make monitor` |
-| `make dev` | Lance en mode debug | `make dev IP=192.168.0.17 NAME=test FRIENDLY_NAME="Test"` |
 
 ## 🐳 Commandes Docker

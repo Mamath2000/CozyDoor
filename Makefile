@@ -1,4 +1,4 @@
-.PHONY: help install config test-getconf run monitor clean
+.PHONY: help install config test-getconf monitor clean
 
 # Variables par défaut
 IP ?= 192.168.0.17
@@ -55,19 +55,6 @@ test-getconf: ## Teste la connexion à un appareil (usage: make test-getconf IP=
 	@echo "$(BLUE)Test de connexion à $(IP)...$(NC)"
 	node app/getconf.js $(IP)
 
-run: ## Lance getDoorState en mode manuel (usage: make run IP=... NAME=... FRIENDLY_NAME=...)
-run: ## Lance getDoorState en mode manuel (usage: make run IP=... NAME=... FRIENDLY_NAME=...)
-	@if [ ! -f config.json ]; then \
-		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
-		echo "$(YELLOW)→ Exécutez 'make config' d'abord$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)Lancement de getDoorState...$(NC)"
-	@echo "$(YELLOW)IP: $(IP)$(NC)"
-	@echo "$(YELLOW)Nom: $(NAME)$(NC)"
-	@echo "$(YELLOW)Nom convivial: $(FRIENDLY_NAME)$(NC)"
-	@echo ""
-	node app/getDoorState.js $(IP) $(NAME) $(FRIENDLY_NAME)
 
 clean: ## Nettoie les dépendances et fichiers générés
 
@@ -92,17 +79,8 @@ setup: install config ## Installation complète (dépendances + configuration)
 	@echo "$(BLUE)Prochaines étapes:$(NC)"
 	@echo "  1. Éditez config.json avec vos paramètres MQTT"
 	@echo "  2. Testez la connexion: make test-getconf IP=<votre_ip>"
-	@echo "  3. Testez manuellement: make run IP=<votre_ip> NAME=<nom> FRIENDLY_NAME=<nom_convivial>"
 	@echo ""
 
-dev: ## Lance en mode développement avec logs debug
-	@echo "$(BLUE)Mode développement (debug activé)$(NC)"
-	@if [ ! -f config.json ]; then \
-		echo "$(RED)✗ config.json n'existe pas$(NC)"; \
-		exit 1; \
-	fi
-	@echo "Vérifiez que debug:true est dans config.json"
-	node app/getDoorState.js $(IP) $(NAME) $(FRIENDLY_NAME)
 
 # ==============================================================================
 # Commandes Docker

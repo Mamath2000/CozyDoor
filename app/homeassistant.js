@@ -110,7 +110,7 @@ export class HomeAssistant {
       components: {
         [`${name}_contact`]: {
           platform: 'binary_sensor',
-          object_id: `${name}_contact`,
+          default_entity_id: `binary_sensor.${name}_contact`,
           unique_id: `cosylife_${name}_contact`,
           state_topic: `${this.base_topic}/${name}`,
           json_attributes_topic: `${this.base_topic}/${name}`,
@@ -123,7 +123,7 @@ export class HomeAssistant {
         },
         [`${name}_battery_low`]: {
           platform: 'binary_sensor',
-          object_id: `${name}_battery_low`,
+          default_entity_id: `binary_sensor.${name}_battery_low`,
           unique_id: `cosylife_${name}_battery_low`,
           state_topic: `${this.base_topic}/${name}`,
           json_attributes_topic: `${this.base_topic}/${name}`,
@@ -136,7 +136,7 @@ export class HomeAssistant {
         },
         [`${name}_battery`]: {
           platform: 'sensor',
-          object_id: `${name}_battery`,
+          default_entity_id: `sensor.${name}_battery`,
           unique_id: `cosylife_${name}_battery`,
           state_topic: `${this.base_topic}/${name}`,
           json_attributes_topic: `${this.base_topic}/${name}`,
@@ -150,7 +150,7 @@ export class HomeAssistant {
         },
         [`${name}_ip`]: {
           platform: 'sensor',
-          object_id: `${name}_ip`,
+          default_entity_id: `sensor.${name}_ip`,
           unique_id: `cosylife_${name}_ip`,
           state_topic: `${this.base_topic}/${name}`,
           json_attributes_topic: `${this.base_topic}/${name}`,

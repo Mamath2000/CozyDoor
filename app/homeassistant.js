@@ -33,7 +33,7 @@ export class HomeAssistant {
       components: {
         monitor_status: {
           platform: 'binary_sensor',
-          object_id: 'cozydoor_monitor_status',
+          default_entity_id: 'binary_sensor.cozydoor_monitor_status',
           unique_id: 'cosylife_monitor_status',
           state_topic: this.status_topic,
           payload_on: 'online',

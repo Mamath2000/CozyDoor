@@ -17,8 +17,9 @@ if [ ! -f /app/config.json ]; then
 fi
 
 # Extraire host et port MQTT du fichier config.json
-MQTT_HOST=$(grep -oP '"host"\s*:\s*"\K[^"]+' /app/config.json 2>/dev/null || echo "localhost")
-MQTT_PORT=$(grep -oP '"port"\s*:\s*\K[0-9]+' /app/config.json 2>/dev/null || echo "1883")
+# (node rather than grep -P: the Alpine image only ships BusyBox grep)
+MQTT_HOST=$(node -p "require('/app/config.json').mqtt_host || 'localhost'" 2>/dev/null || echo "localhost")
+MQTT_PORT=$(node -p "require('/app/config.json').mqtt_port || 1883" 2>/dev/null || echo "1883")
 
 # Tester la connexion MQTT
 if ! nc -zv "$MQTT_HOST" "$MQTT_PORT" 2>&1 > /dev/null; then

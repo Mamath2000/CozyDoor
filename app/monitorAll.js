@@ -193,8 +193,9 @@ async function main() {
     republish('connexion MQTT');
   });
 
-  mqttClient.on('message', (topic, message) => {
-    if (topic === HA_STATUS_TOPIC && message.toString() === 'online') {
+  mqttClient.on('message', (topic, message, packet) => {
+    // un message de naissance retenu revient à chaque abonnement : déjà couvert par la republication à la connexion
+    if (topic === HA_STATUS_TOPIC && message.toString() === 'online' && !packet.retain) {
       republish('Home Assistant redémarré');
     }
   });

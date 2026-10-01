@@ -195,6 +195,10 @@ export class HomeAssistant {
    * @returns {object} Données formatées pour MQTT
    */
   formatSensorData(state, device_id, device_model_name, friendly_name, ip) {
+    // lecture incomplète : ne rien publier plutôt qu'un faux "fermé" / batterie nulle
+    if (typeof state['7'] !== 'number' || typeof state['9'] !== 'number') {
+      return null;
+    }
     return {
       battery: parseFloat(state['9'] / 10),
       contact: state['7'] === 1 ? 'on' : 'off',

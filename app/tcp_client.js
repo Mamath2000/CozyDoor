@@ -7,14 +7,25 @@ const CMD_SET = 3;
 
 /**
  * Client TCP pour communiquer avec les appareils CosyLife
+ *
+ * Le protocole est du JSON terminé par \r\n : les données reçues sont accumulées et découpées par ligne
+ * (un événement 'data' peut contenir un message partiel ou plusieurs messages).
  */
 export class TcpClient {
-  constructor(ip, timeout = 3000) {
+  /**
+   * @param {string} ip
+   * @param {number} timeout - délai max (ms) pour la connexion, puis pour chaque réponse
+   */
+  constructor(ip, timeout = 1000) {
     this._ip = ip;
     this._port = 5555;
     this._connect = null;
     this.timeout = timeout;
-    
+
+    this._buffer = '';
+    this._messages = [];   // messages JSON reçus, pas encore consommés
+    this._waiter = null;   // fonction appelée à l'arrivée d'un message
+
     this._device_id = null;
     this._pid = null;
     this._device_type_code = null;
@@ -36,6 +47,7 @@ export class TcpClient {
       }
       this._connect = null;
     }
+    if (this._waiter) this._waiter();
   }
 
   /**
@@ -44,38 +56,55 @@ export class TcpClient {
    */
   async _initSocket() {
     return new Promise((resolve) => {
-      try {
-        const socket = new net.Socket();
-        socket.setTimeout(this.timeout);
+      const socket = new net.Socket();
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!ok) socket.destroy();
+        resolve(ok);
+      };
 
-        socket.on('error', (err) => {
-          logger.info(`_initSocketerror, ip=${this._ip}, error=${err.message}`);
-          this.disconnect();
-          resolve(false);
-        });
+      // délai sur la connexion seule : une fois connecté, chaque réponse a son propre délai (_receive)
+      const timer = setTimeout(() => {
+        logger.debug(`connect timeout, ip=${this._ip}`);
+        done(false);
+      }, this.timeout);
 
-        socket.on('timeout', () => {
-          logger.info(`Socket timeout for ip=${this._ip}`);
-          this.disconnect();
-          resolve(false);
-        });
+      socket.on('error', (err) => {
+        logger.debug(`socket error, ip=${this._ip}, error=${err.message}`);
+        if (settled) this.disconnect(); else done(false);
+      });
 
-        socket.connect(this._port, this._ip, () => {
-          this._connect = socket;
-          resolve(true);
-        });
-      } catch (e) {
-        logger.info(`_initSocketerror, ip=${this._ip}`);
-        this.disconnect();
-        resolve(false);
-      }
+      socket.on('close', () => {
+        if (this._connect === socket) this._connect = null;
+        if (this._waiter) this._waiter();
+      });
+
+      socket.on('data', (data) => {
+        this._buffer += data.toString();
+        let idx;
+        while ((idx = this._buffer.indexOf('\n')) >= 0) {
+          const line = this._buffer.slice(0, idx).trim();
+          this._buffer = this._buffer.slice(idx + 1);
+          if (!line) continue;
+          try {
+            this._messages.push(JSON.parse(line));
+          } catch (e) {
+            logger.debug(`invalid JSON from ${this._ip}: ${line}`);
+          }
+        }
+        if (this._waiter) this._waiter();
+      });
+
+      socket.connect(this._port, this._ip, () => {
+        this._connect = socket;
+        done(true);
+      });
     });
   }
 
-  /**
-   * Vérifie si l'appareil est valide
-   * @returns {boolean}
-   */
   get check() {
     return true;
   }
@@ -101,81 +130,43 @@ export class TcpClient {
   }
 
   /**
-   * Récupère les informations de l'appareil
+   * Récupère les informations de l'appareil (did, pid) ; le nom du modèle vient de l'API doiting
+   * si elle répond (facultatif).
+   * @param {boolean} withModel - interroger l'API doiting pour le nom du modèle
    * @returns {Promise<object|null>}
    */
-  async _device_info() {
-    this._only_send(CMD_INFO, {});
+  async _device_info(withModel = true) {
+    const msg = await this._send_receiver(CMD_INFO, {});
+    if (!msg || !msg.did || !msg.pid) {
+      logger.debug(`_device_info: réponse incomplète de ${this._ip}`);
+      return null;
+    }
 
-    try {
-      const resp = await this._receive();
-      if (!resp) {
-        return null;
-      }
+    this._device_id = msg.did;
+    this._pid = msg.pid;
+    this._device_type_code = msg.dtp ?? null;
 
-      let resp_json;
-      try {
-        resp_json = JSON.parse(resp.toString().trim());
-      } catch (e) {
-        logger.info('_device_info.recv.error - JSON parse failed');
-        return null;
-      }
-
-      if (!resp_json.msg || typeof resp_json.msg !== 'object') {
-        logger.info('_device_info.recv.error1');
-        return null;
-      }
-
-      if (!resp_json.msg.did) {
-        logger.info('_device_info.recv.error2');
-        return null;
-      }
-
-      this._device_id = resp_json.msg.did;
-
-      if (!resp_json.msg.pid) {
-        logger.info('_device_info.recv.error3');
-        return null;
-      }
-
-      this._pid = resp_json.msg.pid;
-
+    if (withModel) {
       const pid_list = await getPidList();
       for (const item of pid_list) {
-        let match = false;
-        for (const item1 of item.device_model) {
-          if (item1.device_product_id === this._pid) {
-            match = true;
-            this._icon = item1.icon;
-            this._device_model_name = item1.device_model_name;
-            this._dpid = item1.dpid;
-            break;
-          }
-        }
-
-        if (match) {
+        const model = (item.device_model || []).find((m) => m.device_product_id === this._pid);
+        if (model) {
+          this._icon = model.icon;
+          this._device_model_name = model.device_model_name;
+          this._dpid = model.dpid;
           this._device_type_code = item.device_type_code;
           break;
         }
       }
-
-      logger.info(`Device ID: ${this._device_id}`);
-      logger.info(`Device Type Code: ${this._device_type_code}`);
-      logger.info(`PID: ${this._pid}`);
-      logger.info(`Model Name: ${this._device_model_name}`);
-      logger.info(`Icon: ${this._icon}`);
-
-      return resp_json.msg;
-    } catch (e) {
-      logger.info(`_device_info error: ${e.message}`);
-      return null;
     }
+
+    return msg;
   }
 
   /**
    * Crée un paquet de message
-   * @param {number} cmd 
-   * @param {object} payload 
+   * @param {number} cmd
+   * @param {object} payload
    * @returns {Buffer}
    */
   _get_package(cmd, payload) {
@@ -213,133 +204,67 @@ export class TcpClient {
     }
 
     const payload_str = JSON.stringify(message);
-    logger.info(`_package=${payload_str}`);
+    logger.debug(`_package=${payload_str}`);
     return Buffer.from(payload_str + '\r\n', 'utf8');
   }
 
   /**
-   * Reçoit les données du socket
-   * @returns {Promise<Buffer|null>}
+   * Attend le message portant le numéro de série sn
+   * @param {string} sn
+   * @returns {Promise<object|null>} message complet, ou null (délai dépassé, socket fermé)
    */
-  async _receive() {
-    return new Promise((resolve) => {
-      if (!this._connect) {
-        resolve(null);
-        return;
-      }
-
-      const timeout = setTimeout(() => {
-        resolve(null);
-      }, this.timeout);
-
-      this._connect.once('data', (data) => {
-        clearTimeout(timeout);
-        resolve(data);
+  async _receive(sn) {
+    const deadline = Date.now() + this.timeout;
+    while (true) {
+      const i = this._messages.findIndex((m) => String(m.sn) === sn);
+      if (i >= 0) return this._messages.splice(i, 1)[0];
+      const left = deadline - Date.now();
+      if (!this._connect || left <= 0) return null;
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, left);
+        this._waiter = () => { clearTimeout(timer); resolve(); };
       });
-
-      this._connect.once('error', () => {
-        clearTimeout(timeout);
-        resolve(null);
-      });
-    });
+      this._waiter = null;
+    }
   }
 
   /**
-   * Envoie et reçoit des données
-   * @param {number} cmd 
-   * @param {object} payload 
-   * @returns {Promise<object|null>}
+   * Envoie une commande et attend sa réponse
+   * @param {number} cmd
+   * @param {object} payload
+   * @returns {Promise<object|null>} champ msg de la réponse
    */
   async _send_receiver(cmd, payload) {
+    if (!this._connect) return null;
     try {
-      const pkg = this._get_package(cmd, payload);
-      this._connect.write(pkg);
+      this._connect.write(this._get_package(cmd, payload));
     } catch (e) {
-      try {
-        this.disconnect();
-        await this._initSocket();
-        const pkg = this._get_package(cmd, payload);
-        this._connect.write(pkg);
-      } catch (e2) {
-        return null;
-      }
-    }
-
-    try {
-      let i = 10;
-      while (i > 0) {
-        const res = await this._receive();
-        if (!res) {
-          i--;
-          continue;
-        }
-
-        const resStr = res.toString();
-        i--;
-
-        // On vérifie que le SN correspond
-        if (resStr.includes(this._sn)) {
-          const payload_resp = JSON.parse(resStr.trim());
-          
-          if (!payload_resp || Object.keys(payload_resp).length === 0) {
-            return null;
-          }
-
-          if (!payload_resp.msg || typeof payload_resp.msg !== 'object') {
-            return null;
-          }
-
-          if (!payload_resp.msg.data || typeof payload_resp.msg.data !== 'object') {
-            return null;
-          }
-
-          return payload_resp.msg.data;
-        }
-      }
-
-      return null;
-    } catch (e) {
-      logger.info(`_send_receiver.recv.error: ${e.message}`);
+      logger.debug(`write error, ip=${this._ip}: ${e.message}`);
       return null;
     }
+    const resp = await this._receive(this._sn);
+    if (!resp || !resp.msg || typeof resp.msg !== 'object') return null;
+    return resp.msg;
   }
 
   /**
-   * Envoie uniquement, sans recevoir
-   * @param {number} cmd 
-   * @param {object} payload 
-   */
-  _only_send(cmd, payload) {
-    try {
-      const pkg = this._get_package(cmd, payload);
-      this._connect.write(pkg);
-    } catch (e) {
-      try {
-        this.disconnect();
-        this._initSocket();
-        const pkg = this._get_package(cmd, payload);
-        this._connect.write(pkg);
-      } catch (e2) {
-        this.disconnect();
-      }
-    }
-  }
-
-  /**
-   * Contrôle l'appareil
-   * @param {object} payload 
+   * Contrôle l'appareil (envoi sans attendre de réponse)
+   * @param {object} payload
    * @returns {boolean}
    */
   control(payload) {
-    this._only_send(CMD_SET, payload);
+    if (!this._connect) return false;
+    this._connect.write(this._get_package(CMD_SET, payload));
     return true;
   }
 
   /**
    * Interroge l'état de l'appareil
-   * @returns {Promise<object|null>}
+   * @returns {Promise<object|null>} attributs (ex: {"7": 1, "9": 1000})
    */
   async query() {
-    return this._send_receiver(CMD_QUERY, {});
+    const msg = await this._send_receiver(CMD_QUERY, {});
+    if (!msg || !msg.data || typeof msg.data !== 'object') return null;
+    return msg.data;
   }
 }

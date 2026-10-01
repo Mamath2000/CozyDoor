@@ -23,7 +23,6 @@
       "enabled": true
     }
   ],
-  "polling_interval": 1000,
-  "connection_timeout": 100,
-  "retry_delay": 5000
+  "probe_interval": 250,
+  "connect_timeout": 1000
 }

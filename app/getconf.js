@@ -9,7 +9,7 @@ if (process.argv.length > 2) {
 console.log(`Scanning IP: ${ip}`);
 
 async function main() {
-  const client = new TcpClient(ip, 100);
+  const client = new TcpClient(ip, 1000);
   
   const connected = await client._initSocket();
   

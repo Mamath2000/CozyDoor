@@ -15,8 +15,10 @@ export function getSn() {
   return String(Date.now());
 }
 
-// Cache pour get_pid_list
+// Cache pour get_pid_list ; un échec n'est retenté qu'après PID_RETRY_MS (l'API est hors du LAN)
 let _CACHE_PID = [];
+let _PID_FAILED_AT = 0;
+const PID_RETRY_MS = 3600 * 1000;
 
 /**
  * Récupère la liste des produits depuis l'API
@@ -27,6 +29,10 @@ export async function getPidList(lang = 'en') {
   if (_CACHE_PID.length !== 0) {
     return _CACHE_PID;
   }
+  if (Date.now() - _PID_FAILED_AT < PID_RETRY_MS) {
+    return [];
+  }
+  _PID_FAILED_AT = Date.now();  // remis à 0 en cas de succès
 
   const domain = 'api-us.doiting.com';
   const protocol = 'http';
@@ -52,6 +58,7 @@ export async function getPidList(lang = 'en') {
     }
 
     _CACHE_PID = info.list;
+    _PID_FAILED_AT = 0;
     return _CACHE_PID;
   } catch (e) {
     logger.error(`Error making API request: ${e.message}`);

@@ -1,9 +1,10 @@
 import { TcpClient } from './tcp_client.js';
 
-// Récupération de l'IP depuis les arguments
-let ip = '192.168.0.17';
-if (process.argv.length > 2) {
-  ip = process.argv[2];
+// IP du capteur en argument (le capteur doit être éveillé : ouvrir/fermer puis lancer dans les ~10 s)
+const ip = process.argv[2];
+if (!ip) {
+  console.error('Usage: node app/getconf.js <ip>');
+  process.exit(1);
 }
 
 console.log(`Scanning IP: ${ip}`);

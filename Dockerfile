@@ -1,5 +1,5 @@
 # Utiliser une image Node.js officielle
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Arguments de build pour les métadonnées
 ARG GIT_REF=unknown
@@ -15,8 +15,8 @@ LABEL org.opencontainers.image.title="CozyDoor" \
       org.opencontainers.image.authors="Mamath" \
       org.opencontainers.image.source="https://github.com/Mamath2000/CozyDoor"
 
-# Installer les outils système nécessaires (ping, netcat pour health check)
-RUN apk add --no-cache iputils netcat-openbsd
+# netcat pour le health check
+RUN apk add --no-cache netcat-openbsd
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -25,7 +25,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installer les dépendances
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copier le code source
 COPY app/ ./app/

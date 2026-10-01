@@ -3,6 +3,11 @@
  * Gère la génération des payloads de découverte pour Home Assistant
  */
 
+import fs from 'fs';
+
+// version affichée dans Home Assistant = celle de package.json (copié dans l'image)
+const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+
 export class HomeAssistant {
   /**
    * @param {string} base_topic - Topic MQTT de base (par défaut 'CosyLife')
@@ -24,11 +29,11 @@ export class HomeAssistant {
         manufacturer: 'CozyDoor',
         model: 'Multi-Sensor Monitor',
         name: 'CozyDoor Monitor',
-        sw_version: '2.0.0'
+        sw_version: VERSION
       },
       origin: {
         name: 'CozyDoor',
-        sw_version: '2.0.0'
+        sw_version: VERSION
       },
       components: {
         monitor_status: {

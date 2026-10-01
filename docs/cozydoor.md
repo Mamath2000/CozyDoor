@@ -94,7 +94,7 @@ Un capteur mort (pile vide, Wi-Fi perdu) ne se signale pas : surveiller `last_se
 
 | Action | Commande |
 |---|---|
-| Publier une nouvelle image | `make docker-publish` (dans le repo ; tag `latest` + version, puis incrémente `package.json`) |
+| Publier une nouvelle image | `make docker-publish` (arbre propre requis : version +1 commitée « Release X.Y.Z », image `latest` + `X.Y.Z` + ref git, tag git `vX.Y.Z`), puis `git push origin main --tags` |
 | Déployer sur un site | `docker compose pull && docker compose up -d` dans le dossier du compose |
 | Tester un capteur | `make test-getconf IP=<ip>` (pendant un réveil) |
 | Logs | `docker logs -f cozydoor` |

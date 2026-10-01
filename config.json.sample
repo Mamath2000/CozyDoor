@@ -1,28 +1,16 @@
 {
-  "mqtt_host": "192.168.0.101",
+  "mqtt_host": "192.168.1.10",
   "mqtt_port": 1883,
   "base_topic": "CosyLife",
-  "debug": true,
+  "debug": false,
+  "probe_interval": 250,
+  "connect_timeout": 1000,
   "sensors": [
     {
-      "name": "test_jarsay",
-      "friendly_name": "Velux Sdb",
-      "ip": "192.168.90.192",
-      "enabled": true
-    },
-    {
-      "name": "test2",
-      "friendly_name": "Porte2",
-      "ip": "192.168.90.168",
-      "enabled": true
-    },
-    {
-      "name": "fenetre_bureau",
-      "friendly_name": "Fenêtre Bureau",
-      "ip": "192.168.90.163",
+      "name": "cozylife_xxxx",
+      "friendly_name": "Porte d'entrée",
+      "ip": "192.168.1.50",
       "enabled": true
     }
-  ],
-  "probe_interval": 250,
-  "connect_timeout": 1000
+  ]
 }

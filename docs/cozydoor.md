@@ -87,8 +87,9 @@ avertissement au démarrage. Les capteurs doivent avoir une **IP fixe** (réserv
 Entités par capteur : contact (`binary_sensor`, door), batterie, alerte batterie (< 30 %), IP,
 **dernier réveil** (`sensor.<name>_last_seen`, timestamp). Disponibilité = statut du moniteur.
 
-Un capteur mort (pile vide, Wi-Fi perdu) ne se signale pas : surveiller `last_seen` dans HA
-(alerte « pas vu depuis X jours »).
+Un capteur mort (pile vide, Wi-Fi perdu) ne se signale pas. `last_seen` permet de le constater, mais pas
+d'alerter automatiquement : un capteur peu sollicité (velux, porte d'une résidence secondaire) peut rester
+fermé, donc endormi, pendant des mois.
 
 ## Exploitation
 

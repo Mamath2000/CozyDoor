@@ -158,9 +158,38 @@ export class HomeAssistant {
           entity_category: 'diagnostic',
           name: 'IP Adresse',
           value_template: '{{ value_json.ip }}'
+        },
+        // topic séparé, publié une fois par réveil : dans l'état JSON, il changerait à chaque lecture
+        [`${name}_last_seen`]: {
+          platform: 'sensor',
+          default_entity_id: `sensor.${name}_last_seen`,
+          unique_id: `cosylife_${name}_last_seen`,
+          state_topic: this.getLastSeenTopic(name),
+          entity_category: 'diagnostic',
+          device_class: 'timestamp',
+          name: 'Dernier réveil'
         }
       }
     };
+  }
+
+  /**
+   * Topic de l'horodatage du dernier réveil d'un capteur
+   * @param {string} name - Nom du capteur
+   * @returns {string}
+   */
+  getLastSeenTopic(name) {
+    return `${this.base_topic}/${name}/last_seen`;
+  }
+
+  /**
+   * Publie l'horodatage du dernier réveil (ISO 8601)
+   * @param {object} mqttClient - Client MQTT
+   * @param {string} name - Nom du capteur
+   * @param {string} iso - Date ISO 8601
+   */
+  publishLastSeen(mqttClient, name, iso) {
+    mqttClient.publish(this.getLastSeenTopic(name), iso, { qos: 1, retain: true });
   }
 
   /**

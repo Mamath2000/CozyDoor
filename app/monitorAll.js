@@ -25,6 +25,9 @@ const probe_interval = config.probe_interval || 250;
 const connect_timeout = config.connect_timeout || 1000;
 const max_in_flight = Math.ceil(connect_timeout / probe_interval) + 2;
 
+const HA_STATUS_TOPIC = 'homeassistant/status';  // message de naissance de HA
+const HA_STATE_DELAY = 2000;                     // ms entre la découverte et la republication des états
+
 // Configuration du logger selon le mode debug
 if (!debug_mode) {
   logger.debug = () => {}; // Désactive les logs debug
@@ -46,8 +49,8 @@ function sleep(ms) {
 }
 
 /**
- * Gère un capteur individuel
- * @param {object} sensor
+ * Gère un capteur individuel (la découverte HA est publiée par republish(), dans main)
+ * @param {object} sensor - entrée de config + lastData / lastSeen (dernier état et réveil publiés)
  * @param {object} mqttClient
  * @param {HomeAssistant} ha - Instance Home Assistant
  */
@@ -55,10 +58,6 @@ async function monitorSensor(sensor, mqttClient, ha) {
   const { name, friendly_name, ip } = sensor;
 
   logger.info(`[${name}] Démarrage de la surveillance pour ${friendly_name} (${ip})`);
-
-  // Publication de la découverte Home Assistant
-  ha.publishDiscovery(mqttClient, name, friendly_name, ip);
-  logger.info(`[${name}] Payload Home Assistant publié`);
 
   const device = { id: null, model: null };  // lu une fois, au premier réveil
   let seq = 0;           // numéro de la dernière tentative lancée
@@ -93,6 +92,8 @@ async function monitorSensor(sensor, mqttClient, ha) {
         awake = true;
         wakeAt = now;
         logger.info(`[${name}] Réveil`);
+        sensor.lastSeen = new Date(now).toISOString();
+        ha.publishLastSeen(mqttClient, name, sensor.lastSeen);
       }
       lastOk = now;
 
@@ -104,6 +105,7 @@ async function monitorSensor(sensor, mqttClient, ha) {
         const payload = JSON.stringify(jsondata);
         if (payload !== lastPayload) {
           ha.publishState(mqttClient, name, jsondata);
+          sensor.lastData = jsondata;
           const summary = `Contact: ${jsondata.contact}, Batterie: ${jsondata.battery}%`;
           if (summary !== lastSummary) logger.info(`[${name}] ${summary}`);
           lastPayload = payload;
@@ -148,8 +150,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Filtrer les capteurs activés
-  const enabledSensors = config.sensors.filter(s => s.enabled !== false);
+  // Filtrer les capteurs activés (+ dernier état / réveil publiés, pour les republier)
+  const enabledSensors = config.sensors
+    .filter(s => s.enabled !== false)
+    .map(s => ({ ...s, lastData: null, lastSeen: null }));
 
   if (enabledSensors.length === 0) {
     logger.error('Aucun capteur activé dans config.json');
@@ -167,16 +171,32 @@ async function main() {
     will: ha.getLwtConfig()
   });
 
+  // Découverte + statut, puis derniers états connus : à chaque connexion (broker redémarré, reconnexion)
+  // et quand HA redémarre (message de naissance sur homeassistant/status).
+  const republish = (reason) => {
+    ha.publishMonitorDiscovery(mqttClient);
+    for (const s of enabledSensors) ha.publishDiscovery(mqttClient, s.name, s.friendly_name, s.ip);
+    ha.publishMonitorStatus(mqttClient, 'online');
+    logger.info(`✓ Découverte Home Assistant publiée, statut online (${reason})`);
+    // laisser HA traiter la découverte avant d'envoyer les états
+    setTimeout(() => {
+      for (const s of enabledSensors) {
+        if (s.lastData) ha.publishState(mqttClient, s.name, s.lastData);
+        if (s.lastSeen) ha.publishLastSeen(mqttClient, s.name, s.lastSeen);
+      }
+    }, HA_STATE_DELAY);
+  };
+
   mqttClient.on('connect', () => {
     logger.info('✓ Connecté au broker MQTT');
+    mqttClient.subscribe(HA_STATUS_TOPIC);
+    republish('connexion MQTT');
+  });
 
-    // Publier la découverte du moniteur
-    ha.publishMonitorDiscovery(mqttClient);
-    logger.info('✓ Device CozyDoor Monitor créé dans Home Assistant');
-
-    // Publier le statut online
-    ha.publishMonitorStatus(mqttClient, 'online');
-    logger.info('✓ Statut: online');
+  mqttClient.on('message', (topic, message) => {
+    if (topic === HA_STATUS_TOPIC && message.toString() === 'online') {
+      republish('Home Assistant redémarré');
+    }
   });
 
   mqttClient.on('error', (err) => {

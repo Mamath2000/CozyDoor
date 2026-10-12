@@ -100,4 +100,4 @@ fermé, donc endormi, pendant des mois.
 | Tester un capteur | `make test-getconf IP=<ip>` (pendant un réveil) |
 | Logs | `docker logs -f cozydoor` |
 
-Pour déboguer sans toucher à la prod : broker Mosquitto de dev sur dev-math (port 1883) avec un `base_topic` de test.
+Pour déboguer sans toucher à la prod : broker Mosquitto du HA de dev (ha-dev, `192.168.100.106:1883`) avec un `base_topic` de test.

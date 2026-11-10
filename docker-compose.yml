@@ -9,7 +9,10 @@ services:
       # Monter votre fichier de configuration
       - ./config.json:/app/config.json:ro
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      MQTT_CLIENTID: ${MQTT_CLIENTID:-}
+      MQTT_USER: ${MQTT_USER:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
     # Health check : utilise le script healthcheck.sh qui lit config.json
     healthcheck:
       test: ["CMD", "/app/healthcheck.sh"]

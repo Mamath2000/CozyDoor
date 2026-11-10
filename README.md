@@ -11,12 +11,15 @@ CozyDoor les interroge toutes les 250 ms. Détails (mesures, protocole, topics, 
 
 ```bash
 make config            # config.json depuis config.json.sample, puis l'éditer (broker, capteurs à IP fixe)
+make env               # .env depuis .env.sample, puis renseigner client ID et identifiants MQTT
 make install           # dépendances (npm ci)
 make monitor           # surveillance en local
 ```
 
-En production : image `mathmath350/cozydoor`, voir `docker-compose.example.yml` (réseau `host` obligatoire,
-`config.json` monté en lecture seule).
+L'hôte et le port MQTT restent dans `config.json`. Les identifiants optionnels (`MQTT_CLIENTID`, `MQTT_USER`,
+`MQTT_PASSWORD`) sont lus depuis `.env` en local et transmis par Docker Compose. Choisissez un `MQTT_CLIENTID`
+unique par instance. En production : image `mathmath350/cozydoor`, voir `docker-compose.example.yml`
+(réseau `host` obligatoire, `config.json` monté en lecture seule).
 
 ## Développement
 

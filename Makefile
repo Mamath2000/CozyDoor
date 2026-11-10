@@ -1,4 +1,4 @@
-.PHONY: help install config test-getconf monitor clean docker-build docker-run docker-up docker-down docker-logs docker-restart docker-shell docker-health docker-clean docker-publish
+.PHONY: help install config env test-getconf monitor clean docker-build docker-run docker-up docker-down docker-logs docker-restart docker-shell docker-health docker-clean docker-publish
 
 # Couleurs pour l'affichage
 BLUE := \033[0;34m
@@ -18,6 +18,10 @@ install: ## Installe les dépendances Node.js (npm ci, versions du package-lock.
 config: ## Crée config.json depuis config.json.sample (si absent)
 	@if [ -f config.json ]; then echo "$(YELLOW)⚠ config.json existe déjà$(NC)"; \
 	else cp config.json.sample config.json && echo "$(GREEN)✓ config.json créé, à éditer$(NC)"; fi
+
+env: ## Crée .env depuis .env.sample (si absent)
+	@if [ -f .env ]; then echo "$(YELLOW)⚠ .env existe déjà$(NC)"; \
+	else cp .env.sample .env && echo "$(GREEN)✓ .env créé, à éditer$(NC)"; fi
 
 test-getconf: ## Infos et état d'un capteur, pendant un réveil (IP=…)
 	@[ -n "$(IP)" ] || { echo "$(RED)✗ IP requise : make test-getconf IP=192.168.x.y$(NC)"; exit 1; }
@@ -39,7 +43,8 @@ docker-build: ## Construit l'image locale cozydoor:latest
 
 docker-run: ## Lance l'image locale (réseau host, config.json monté)
 	@[ -f config.json ] || { echo "$(RED)✗ config.json absent (make config)$(NC)"; exit 1; }
-	docker run --rm --network host -v $(PWD)/config.json:/app/config.json:ro cozydoor:latest
+	@if [ -f .env ]; then docker run --rm --network host --env-file $(PWD)/.env -v $(PWD)/config.json:/app/config.json:ro cozydoor:latest; \
+	else docker run --rm --network host -v $(PWD)/config.json:/app/config.json:ro cozydoor:latest; fi
 
 docker-up: ## Lance avec docker compose (build local)
 	@[ -f config.json ] || { echo "$(RED)✗ config.json absent (make config)$(NC)"; exit 1; }

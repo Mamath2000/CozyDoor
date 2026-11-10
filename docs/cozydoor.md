@@ -75,6 +75,11 @@ Les réponses peuvent arriver fragmentées ou collées : elles sont lues ligne p
 `polling_interval`, `connection_timeout` et `retry_delay` (anciennes versions) sont ignorés, avec un
 avertissement au démarrage. Les capteurs doivent avoir une **IP fixe** (réservation DHCP).
 
+Les identifiants MQTT peuvent être définis dans un fichier `.env` à la racine du projet (créer avec
+`make env`, puis renseigner `MQTT_CLIENTID`, `MQTT_USER` et `MQTT_PASSWORD`). Le client ID doit être unique
+pour chaque instance. Ces variables sont également transmises au conteneur par Docker Compose. L'hôte et le
+port du broker restent configurés ici.
+
 ## MQTT et Home Assistant
 
 | Topic | Contenu | Retenu |

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -168,6 +169,9 @@ async function main() {
   // Connexion MQTT unique partagée avec LWT
   const mqttClient = mqtt.connect(`mqtt://${mqtt_host}:${mqtt_port}`, {
     keepalive: 120,
+    clientId: process.env.MQTT_CLIENTID || undefined,
+    username: process.env.MQTT_USER || undefined,
+    password: process.env.MQTT_PASSWORD || undefined,
     will: ha.getLwtConfig()
   });
 
